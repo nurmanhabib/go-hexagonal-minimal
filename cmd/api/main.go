@@ -21,6 +21,10 @@ func main() {
 	dbName := os.Getenv("DB_NAME")
 	dbHost := os.Getenv("DB_HOST")
 	dbPort := os.Getenv("DB_PORT")
+	appPort := os.Getenv("APP_PORT")
+	if appPort == "" {
+		appPort = "8080"
+	}
 
 	db, errDB := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", dbUser, dbPassword, dbHost, dbPort, dbName))
 	if errDB != nil {
@@ -36,5 +40,8 @@ func main() {
 	http.HandleFunc("/users/get", handler.Get)
 	http.HandleFunc("/users/delete", handler.Delete)
 
-	http.ListenAndServe(":8080", nil)
+	addr := fmt.Sprintf(":%s", appPort)
+
+	log.Printf("HTTP server running on port %s\n", addr)
+	http.ListenAndServe(addr, nil)
 }
