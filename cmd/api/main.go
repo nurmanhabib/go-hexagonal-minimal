@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
@@ -23,8 +24,9 @@ func main() {
 
 	db, errDB := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", dbUser, dbPassword, dbHost, dbPort, dbName))
 	if errDB != nil {
-		panic(errDB)
+		log.Fatal(errDB)
 	}
+	defer db.Close()
 
 	userRepo := mysqlAdapter.NewUserRepository(db)
 	userService := user.NewService(userRepo)
