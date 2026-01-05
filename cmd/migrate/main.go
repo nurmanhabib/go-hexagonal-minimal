@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -13,6 +14,10 @@ import (
 )
 
 func main() {
+	if len(os.Args) < 2 {
+		os.Args = append(os.Args, "up")
+	}
+
 	dbUser := os.Getenv("DB_USER")
 	dbPassword := os.Getenv("DB_PASS")
 	dbName := os.Getenv("DB_NAME")
@@ -29,7 +34,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := goose.Up(db, "migrations"); err != nil {
+	cmd := os.Args[1]
+	if err := goose.RunContext(context.Background(), cmd, db, "migrations"); err != nil {
 		log.Fatal(err)
 	}
 
