@@ -1,6 +1,6 @@
 -- +goose Up
 CREATE TABLE users (
-                       id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                       id VARCHAR(36) PRIMARY KEY,
                        name VARCHAR(100) NOT NULL
 );
 

@@ -9,30 +9,26 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/joho/godotenv/autoload"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	httpAdapter "hexagonal-minimal/internal/adapter/http"
+	mongoAdapter "hexagonal-minimal/internal/adapter/mongodb"
 	mysqlAdapter "hexagonal-minimal/internal/adapter/mysql"
 	"hexagonal-minimal/internal/domain/user"
 )
 
 func main() {
-	dbUser := os.Getenv("DB_USER")
-	dbPassword := os.Getenv("DB_PASS")
-	dbName := os.Getenv("DB_NAME")
-	dbHost := os.Getenv("DB_HOST")
-	dbPort := os.Getenv("DB_PORT")
 	appPort := os.Getenv("APP_PORT")
 	if appPort == "" {
 		appPort = "8080"
 	}
 
-	db, errDB := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", dbUser, dbPassword, dbHost, dbPort, dbName))
-	if errDB != nil {
-		log.Fatal(errDB)
-	}
-	defer db.Close()
+	var userRepo user.Repository
 
-	userRepo := mysqlAdapter.NewUserRepository(db)
+	selectedAdapter := "mysql" // or mongo
+	userRepo = resolveUserRepository(selectedAdapter)
+
 	userService := user.NewService(userRepo)
 	handler := httpAdapter.NewHandler(userService)
 
@@ -47,4 +43,59 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func resolveUserRepository(adapter string) user.Repository {
+	switch adapter {
+	case "mysql":
+		db, err := createMySQLConnection()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		return mysqlAdapter.NewUserRepository(db)
+
+	case "mongo":
+		db, err := createMongoDatabase()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		return mongoAdapter.NewUserRepository(db)
+
+	default:
+		log.Fatalf("unknown adapter: %s", adapter)
+		return nil
+	}
+}
+
+func createMySQLConnection() (*sql.DB, error) {
+	dsn := fmt.Sprintf(
+		"%s:%s@tcp(%s:%s)/%s",
+		os.Getenv("DB_USER"),
+		os.Getenv("DB_PASS"),
+		os.Getenv("DB_HOST"),
+		os.Getenv("DB_PORT"),
+		os.Getenv("DB_NAME"),
+	)
+
+	return sql.Open("mysql", dsn)
+}
+
+func createMongoDatabase() (*mongo.Database, error) {
+	mongoURI := os.Getenv("MONGO_URI")
+	dbName := os.Getenv("MONGO_DB_NAME")
+
+	if mongoURI == "" || dbName == "" {
+		return nil, fmt.Errorf("MONGO_URI or MONGO_DB_NAME is not set")
+	}
+
+	client, err := mongo.Connect(
+		options.Client().ApplyURI(mongoURI),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return client.Database(dbName), nil
 }

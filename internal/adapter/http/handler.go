@@ -2,10 +2,8 @@ package http
 
 import (
 	"encoding/json"
-	"net/http"
-	"strconv"
-
 	"hexagonal-minimal/internal/domain/user"
+	"net/http"
 )
 
 type Handler struct {
@@ -22,17 +20,20 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewDecoder(r.Body).Decode(&req)
 
-	err := h.service.Create(r.Context(), req.Name)
+	user, err := h.service.Create(r.Context(), req.Name)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
 
+	w.Header().Add("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusCreated)
+
+	json.NewEncoder(w).Encode(user)
 }
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
-	id, _ := strconv.ParseInt(r.URL.Query().Get("id"), 10, 64)
+	id := r.URL.Query().Get("id")
 
 	u, err := h.service.Get(r.Context(), id)
 	if err != nil {
@@ -40,11 +41,14 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Add("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+
 	json.NewEncoder(w).Encode(u)
 }
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
-	id, _ := strconv.ParseInt(r.URL.Query().Get("id"), 10, 64)
+	id := r.URL.Query().Get("id")
 
 	err := h.service.Delete(r.Context(), id)
 	if err != nil {
