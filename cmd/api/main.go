@@ -43,5 +43,8 @@ func main() {
 	addr := fmt.Sprintf(":%s", appPort)
 
 	log.Printf("HTTP server running on port %s\n", addr)
-	http.ListenAndServe(addr, nil)
+	err := http.ListenAndServe(addr, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
