@@ -38,10 +38,23 @@ func (r *UserRepository) FindByID(ctx context.Context, id string) (*user.User, e
 }
 
 func (r *UserRepository) Delete(ctx context.Context, id string) error {
-	_, err := r.db.ExecContext(
+	res, err := r.db.ExecContext(
 		ctx,
 		"DELETE FROM users WHERE id = ?",
 		id,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, errAffected := res.RowsAffected()
+	if errAffected != nil {
+		return errAffected
+	}
+
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
 }
