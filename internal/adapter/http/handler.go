@@ -22,7 +22,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewDecoder(r.Body).Decode(&req)
 
-	user, err := h.service.Create(r.Context(), req.Name)
+	createdUser, err := h.service.Create(r.Context(), req.Name)
 	if err != nil {
 		w.Header().Add("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -33,7 +33,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusCreated)
 
-	json.NewEncoder(w).Encode(user)
+	json.NewEncoder(w).Encode(createdUser)
 }
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
