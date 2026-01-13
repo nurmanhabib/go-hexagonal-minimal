@@ -1,7 +1,9 @@
 package http
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"hexagonal-minimal/internal/domain/user"
 	"net/http"
 )
@@ -22,7 +24,9 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.service.Create(r.Context(), req.Name)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		w.Header().Add("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
 	}
 
@@ -37,7 +41,16 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 	u, err := h.service.Get(r.Context(), id)
 	if err != nil {
-		http.Error(w, err.Error(), 404)
+		w.Header().Add("Content-Type", "application/json; charset=utf-8")
+
+		if errors.Is(err, sql.ErrNoRows) {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
 	}
 
@@ -52,9 +65,21 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 
 	err := h.service.Delete(r.Context(), id)
 	if err != nil {
-		http.Error(w, err.Error(), 500)
+		w.Header().Add("Content-Type", "application/json; charset=utf-8")
+
+		if errors.Is(err, sql.ErrNoRows) {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(map[string]string{"message": "user not found"})
+			return
+		}
+
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	w.Header().Add("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+
+	json.NewEncoder(w).Encode(map[string]string{"message": "user deleted"})
 }
