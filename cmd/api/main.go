@@ -32,14 +32,20 @@ func main() {
 	userService := user.NewService(userRepo)
 	handler := httpAdapter.NewHandler(userService)
 
-	http.HandleFunc("/users", handler.Create)
-	http.HandleFunc("/users/get", handler.Get)
-	http.HandleFunc("/users/delete", handler.Delete)
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /users", handler.Get)
+	mux.HandleFunc("POST /users", handler.Create)
+	mux.HandleFunc("DELETE /users", handler.Delete)
 
 	addr := fmt.Sprintf(":%s", appPort)
 
+	server := &http.Server{
+		Addr:    addr,
+		Handler: mux,
+	}
+
 	log.Printf("HTTP server running on port %s\n", addr)
-	err := http.ListenAndServe(addr, nil)
+	err := server.ListenAndServe()
 	if err != nil {
 		log.Fatal(err)
 	}
